@@ -53,9 +53,6 @@ public class Minimizator {
             impl(neg(neg(A)), A)
     ));
 
-    private static String explanation(int index, String type, Expression expr) {
-        return String.format("[%d. %s] %s", index, type, expr.toString());
-    }
 
     public static List<ProofLine> minimize(Map<Expression, Integer> hypotheses, List<Expression> proof) {
         Map<Expression, ModusPonens> modusPonens = new HashMap<>();
@@ -78,9 +75,9 @@ public class Minimizator {
             } else if (mp != null) {
                 line = new proof.ModusPonens(expr, mp.getFirst(), mp.getSecond());
             } else {
-                System.err.println(expr);
-                result.add(null);
-                continue;
+                throw new StatementException("Proof is incorrect");
+//                result.add(null);
+//                continue;
             }
 
             result.add(line);
@@ -90,6 +87,7 @@ public class Minimizator {
                 for (Line x : r) {
                     modusPonens.put(x.getExpression(), new ModusPonens(i, x.getIndex()));
                 }
+                l2r.remove(expr);
             }
 
             if (!proved.containsKey(expr)) {
@@ -130,12 +128,13 @@ public class Minimizator {
 
     private static boolean checkAxiom(Expression expr, Expression axiom, Map<Variable, Expression> vars) {
         if (axiom instanceof Variable) {
-            if (vars.get(axiom) == null) {
+            Expression variable = vars.get(axiom);
+            if (variable == null) {
                 vars.put((Variable) axiom, expr);
                 return true;
             } else {
 //                System.err.println(axiom + "    " + vars.get(axiom) + "    " + expr);
-                return vars.get(axiom).equals(expr);
+                return variable.equals(expr);
             }
         }
         if (expr.getClass() != axiom.getClass()) {

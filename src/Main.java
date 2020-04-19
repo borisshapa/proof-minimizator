@@ -11,17 +11,18 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main {
-    private static HashMap<Expression, Integer> getHypotheses(String expr, int endOfHypotheses, List<Expression> collect) {
+    private static HashMap<Expression, Integer> getHypotheses(String hypStr, List<Expression> collect) {
         HashMap<Expression, Integer> result = new HashMap<>();
-        String[] splitted = expr.substring(0, endOfHypotheses).split(",");
+        String[] splitted = hypStr.split(",");
+        if (splitted.length == 1 && splitted[0].isEmpty()) {
+            return result;
+        }
         for (int i = 0; i < splitted.length; i++) {
-            if (splitted[i].isEmpty()) {
-                continue;
-            }
             Expression statement = Statement.parse(splitted[i]);
             result.put(statement, i + 1);
             collect.add(statement);
@@ -29,25 +30,31 @@ public class Main {
         return result;
     }
 
-    private static void collect(int index, List<ProofLine> proofLines, boolean[] result) {
+    private static boolean collect(int index, List<ProofLine> proofLines, boolean[] result, Expression total) {
         ProofLine line = proofLines.get(index);
         if (line == null) {
             throw new StatementException("Proof is incorrect");
         }
+        boolean isTotal1 = false;
+        boolean isTotal2 = false;
+        boolean isTotal = proofLines.get(index).getExpression().equals(total);
+        if (isTotal) {
+            Arrays.fill(result, false);
+        }
+
         result[index] = true;
         if (line instanceof ModusPonens) {
             ModusPonens mp = (ModusPonens) line;
-            int ind1 =mp.getLine1();
+            int ind1 = mp.getLine1();
             int ind2 = mp.getLine2();
 
-            if (!result[ind1]) {
-                collect(mp.getLine1(), proofLines, result);
-            }
+            isTotal1 = collect(ind1, proofLines, result, total);
 
-            if (!result[ind2]) {
-                collect(mp.getLine2(), proofLines, result);
+            if (!isTotal1) {
+                isTotal2 = collect(ind2, proofLines, result, total);
             }
         }
+        return isTotal1 || isTotal2 || isTotal;
     }
 
     public static void main(String[] args) {
@@ -62,18 +69,22 @@ public class Main {
             Expression total = Statement.parse(statement.substring(deducibly + 2));
 
             List<Expression> hypothesesList = new ArrayList<>();
-            HashMap<Expression, Integer> hypotheses = getHypotheses(statement, deducibly, hypothesesList);
+            HashMap<Expression, Integer> hypotheses = getHypotheses(statement.substring(0, deducibly), hypothesesList);
             List<Expression> proof = new ArrayList<>();
             while ((statement = scanner.readLine()) != null) {
                 proof.add(Statement.parse(statement));
             }
 
+            if (!proof.get(proof.size() - 1).equals(total)) {
+                throw new StatementException("Proof is incorrect");
+            }
+
             List<ProofLine> proofLines = Minimizator.minimize(hypotheses, proof);
-            int start = proof.lastIndexOf(total);
+            int start = proof.size() - 1;
 
             boolean[] choose = new boolean[proof.size()];
             Arrays.fill(choose, false);
-            collect(start, proofLines, choose);
+            collect(start, proofLines, choose, total);
 
             int index = 1;
             Map<ProofLine, Integer> indices = new HashMap<>();

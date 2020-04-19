@@ -9,6 +9,10 @@ public abstract class ProofLine {
         this.expression = expression;
     }
 
+    public Expression getExpression() {
+        return expression;
+    }
+
     protected String toString(int index, String type) {
         return String.format("[%d. %s] %s", index, type, expression.toString());
     }
