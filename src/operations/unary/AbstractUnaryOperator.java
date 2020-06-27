@@ -24,7 +24,7 @@ public class AbstractUnaryOperator implements Expression{
             return false;
         }
         if (this == obj) {
-            return false;
+            return true;
         }
 
         AbstractUnaryOperator unOp = (AbstractUnaryOperator) obj;
